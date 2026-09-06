@@ -1,0 +1,15 @@
+'use client';
+import {useEffect,useState} from 'react';
+import AppShell from '../../components/AppShell';
+import {addDiary,fetchDiary,fetchSources} from '../../lib/dataService';
+
+export default function Diary(){
+ const [entries,setEntries]=useState([]),[sources,setSources]=useState([]),[form,setForm]=useState({entry_date:new Date().toISOString().slice(0,10),source_id:'',activity:'',hours:'1',reflection:'',evidence_url:''});
+ useEffect(()=>{Promise.all([fetchDiary(),fetchSources()]).then(([d,s])=>{setEntries(d);setSources(s)})},[]);
+ async function submit(e){e.preventDefault(); const row=await addDiary({...form,hours:Number(form.hours)}); setEntries([row,...entries]); setForm({...form,activity:'',hours:'1',reflection:'',evidence_url:''});}
+ const total=entries.reduce((a,b)=>a+Number(b.hours||0),0);
+ return <AppShell><div className="pageHead"><div><div className="eyebrow">EVIDENCE OF ENGAGEMENT</div><h1>Work Diary</h1><p>Log what you actually read, analyzed, built, discussed, or submitted. Twenty-five engagement hours equal one Elton unit.</p></div></div>
+ <div className="grid2"><section className="panel"><h2>New Entry</h2><form className="formGrid" onSubmit={submit}><label>Date<input type="date" value={form.entry_date} onChange={e=>setForm({...form,entry_date:e.target.value})}/></label><label>Astrum Source<select value={form.source_id} onChange={e=>setForm({...form,source_id:e.target.value})}><option value="">General program work</option>{sources.map(s=><option key={s.id} value={s.id}>{s.id} — {s.title}</option>)}</select></label><label>Activity<textarea required value={form.activity} onChange={e=>setForm({...form,activity:e.target.value})} placeholder="What did you do?"/></label><label>Engagement Hours<input type="number" min="0" step="0.25" value={form.hours} onChange={e=>setForm({...form,hours:e.target.value})}/></label><label>Reflection<textarea value={form.reflection} onChange={e=>setForm({...form,reflection:e.target.value})} placeholder="What changed in your understanding?"/></label><label>Dash / Evidence URL<input value={form.evidence_url} onChange={e=>setForm({...form,evidence_url:e.target.value})} placeholder="Optional link"/></label><button className="primaryBtn">LOG ENGAGEMENT</button></form></section>
+ <section className="panel"><h2>Progress Ledger</h2><div className="metric"><small>Total diary hours</small><strong>{total.toFixed(1)}</strong><span>{(total/25).toFixed(2)} Elton units</span></div><p>The diary is meant to capture authentic engagement, not passive elapsed time. Mentors can use it to calibrate workload and verify progression.</p></section></div>
+ <h2 className="sectionTitle">Recent Entries</h2>{entries.length?<table className="table"><thead><tr><th>Date</th><th>Source</th><th>Activity</th><th>Hours</th><th>Reflection</th></tr></thead><tbody>{entries.map(e=><tr key={e.id}><td>{e.entry_date}</td><td>{e.source_id||'General'}</td><td>{e.activity}</td><td>{e.hours}</td><td>{e.reflection}</td></tr>)}</tbody></table>:<div className="empty">No diary entries yet.</div>}</AppShell>
+}
